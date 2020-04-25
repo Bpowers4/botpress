@@ -124,8 +124,11 @@ export class DiagramManager {
       }
     })
 
-    this.currentFlow &&
-      this.currentFlow.nodes.forEach((node: NodeView) => {
+    if (this.currentFlow && this.currentFlow.nodes) {
+      const modelNodes = _.values(this.activeModel.getNodes())
+      const nodesSortedByNameChange = this.sortNodesByNamaChange(this.currentFlow.nodes, modelNodes)
+
+      nodesSortedByNameChange.forEach((node: NodeView) => {
         const model = this.activeModel.getNode(node.id) as BpNodeModel
         if (!model) {
           // Node doesn't exist
@@ -145,10 +148,25 @@ export class DiagramManager {
           })
         }
       })
+    }
 
     this.cleanPortLinks()
     this.activeModel.setLocked(this.isReadOnly)
     this.diagramWidget.forceUpdate()
+  }
+
+  sortNodesByNamaChange(nodes, modelNodes) {
+    if (modelNodes.length !== nodes.length) {
+      return nodes
+    }
+
+    const sortedModelNodes = _.sortBy(modelNodes, 'id')
+    const sortedNodes = _.sortBy(nodes, 'id')
+
+    const renamedNodeIndex = sortedNodes.findIndex(({ name }, i) => name !== sortedModelNodes[i].name)
+    return renamedNodeIndex !== -1
+      ? [sortedNodes[renamedNodeIndex], ...sortedNodes.filter((n, i) => i !== renamedNodeIndex)]
+      : nodes
   }
 
   clearModel() {
